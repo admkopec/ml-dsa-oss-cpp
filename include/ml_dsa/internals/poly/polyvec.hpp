@@ -204,7 +204,8 @@ infinity_norm(std::span<const ml_dsa_field::zq_t, k * ml_dsa_ntt::N> vec)
 
   for (size_t i = 0; i < k; i++) {
     const size_t off = i * ml_dsa_ntt::N;
-    res = std::max(res, ml_dsa_poly::infinity_norm(const_poly_t(vec.subspan(off, ml_dsa_ntt::N))));
+    const uint32_t norm = ml_dsa_poly::infinity_norm(const_poly_t(vec.subspan(off, ml_dsa_ntt::N))).raw();
+    res = ml_dsa_field::zq_t{ ml_dsa_ct::select_u32(norm > res.raw(), res.raw(), norm) };
   }
 
   return res;

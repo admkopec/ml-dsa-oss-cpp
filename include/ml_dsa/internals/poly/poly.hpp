@@ -3,6 +3,7 @@
 #include "ml_dsa/internals/math/reduction.hpp"
 #include "ml_dsa/internals/utility/force_inline.hpp"
 #include "ml_dsa/internals/utility/params.hpp"
+#include "ml_dsa/internals/utility/value_barrier.hpp"
 #include "ntt.hpp"
 #include <algorithm>
 #include <cstddef>
@@ -88,18 +89,8 @@ infinity_norm(std::span<const ml_dsa_field::zq_t, ml_dsa_ntt::N> poly)
   auto res = ml_dsa_field::zq_t::zero();
 
   for (const auto& coeff : poly) {
-#ifdef __clang__
-    if (coeff > qby2) {
-      res = std::max(res, -coeff);
-    } else {
-      res = std::max(res, coeff);
-    }
-#else
-    const bool flg = coeff > qby2;
-    const std::array<ml_dsa_field::zq_t, 2> br{ coeff, -coeff };
-
-    res = std::max(res, br[static_cast<size_t>(flg)]);
-#endif
+    const uint32_t magnitude = ml_dsa_ct::select_u32(coeff.raw() > qby2.raw(), coeff.raw(), (-coeff).raw());
+    res = ml_dsa_field::zq_t{ ml_dsa_ct::select_u32(magnitude > res.raw(), res.raw(), magnitude) };
   }
 
   return res;

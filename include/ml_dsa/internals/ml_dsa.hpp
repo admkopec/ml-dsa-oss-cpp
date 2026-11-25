@@ -247,8 +247,10 @@ sign_core(std::span<const uint8_t, RND_BYTE_LEN> rnd,
 
     const ml_dsa_field::zq_t z_norm = ml_dsa_polyvec::infinity_norm<l>(z);
     const ml_dsa_field::zq_t r0_norm = ml_dsa_polyvec::infinity_norm<k>(r0);
+    const bool z_invalid = z_norm.raw() >= gamma1 - beta;
+    const bool r0_invalid = r0_norm.raw() >= gamma2 - beta;
 
-    if ((z_norm >= ml_dsa_field::zq_t(gamma1 - beta)) || (r0_norm >= ml_dsa_field::zq_t(gamma2 - beta))) {
+    if (z_invalid || r0_invalid) {
       has_signed = false;
     } else {
       std::array<ml_dsa_field::zq_t, k * ml_dsa_ntt::N> h0{};
@@ -265,8 +267,10 @@ sign_core(std::span<const uint8_t, RND_BYTE_LEN> rnd,
 
       const ml_dsa_field::zq_t ct0_norm = ml_dsa_polyvec::infinity_norm<k>(h1);
       const size_t count_1s = ml_dsa_polyvec::count_1s<k>(h);
+      const bool ct0_invalid = ct0_norm.raw() >= gamma2;
+      const bool h_invalid = count_1s > omega;
 
-      has_signed = (ct0_norm < ml_dsa_field::zq_t(gamma2)) && (count_1s <= omega);
+      has_signed = !(ct0_invalid || h_invalid);
     }
 
     kappa += static_cast<uint16_t>(l);

@@ -1,6 +1,7 @@
 #pragma once
 #include "field.hpp"
 #include "ml_dsa/internals/utility/force_inline.hpp"
+#include "ml_dsa/internals/utility/value_barrier.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -55,7 +56,8 @@ decompose(const ml_dsa_field::zq_t r)
 
   const bool flg = (t5.raw() == t1);
 
-  const ml_dsa_field::zq_t r1 = flg ? ml_dsa_field::zq_t::zero() : ml_dsa_field::zq_t(t5.raw() / alpha);
+  const uint32_t r1_raw = ml_dsa_ct::select_u32(flg, t5.raw() / alpha, 0U);
+  const ml_dsa_field::zq_t r1{ r1_raw };
   const ml_dsa_field::zq_t r0_ = r0 - ml_dsa_field::zq_t{ static_cast<uint32_t>(flg) };
 
   return std::make_pair(r1, r0_);
@@ -93,7 +95,8 @@ make_hint(const ml_dsa_field::zq_t z, const ml_dsa_field::zq_t r)
   const ml_dsa_field::zq_t r1 = highbits<alpha>(r);
   const ml_dsa_field::zq_t v1 = highbits<alpha>(r + z);
 
-  return ml_dsa_field::zq_t{ static_cast<uint32_t>(r1 != v1) };
+  const uint32_t hint = ml_dsa_ct::value_barrier(static_cast<uint32_t>(r1.raw() != v1.raw()));
+  return ml_dsa_field::zq_t{ hint };
 }
 
 // 1 -bit hint ( read `h` ) is used to recover higher order bits of `r + z`.
